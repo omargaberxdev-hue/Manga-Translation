@@ -4,13 +4,16 @@ import torch
 import torch.nn.functional as F
 from PIL import Image
 from huggingface_hub import hf_hub_download
-from app.Worker.model_registry import get_model
 
 from pathlib import Path
-class Inpainting:
+from .base import InpaintingStrategy
+from app.celery.model_registry import register_strategy
+
+@register_strategy
+class LaMeInpainting(InpaintingStrategy):
 
     @staticmethod
-    def load_lama_model(device: str = "cpu"):
+    def load_model(device: str = "cpu"):
         models_dir = Path(__file__).parent.parent / "models"
         models_dir.mkdir(parents=True, exist_ok=True)
         
@@ -27,6 +30,9 @@ class Inpainting:
         model.eval()
         print(f"LaMa loaded ({device})")
         return model
+    @classmethod
+    def share_memory(cls, model):
+        model.share_memory()
 
     def __init__(self):
         self.model = get_model("inpaint")
@@ -84,7 +90,7 @@ class Inpainting:
 
         return result_np
 
-    def process_image_with_lama(self, images_boxes: list[list[dict]], images: list) -> list:
+    def process_image(self, images_boxes: list[list[dict]], images: list) -> list:
       results = []
       for idx, page_boxes in enumerate(images_boxes):
             page_img = images[idx]

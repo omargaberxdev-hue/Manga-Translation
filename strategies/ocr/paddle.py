@@ -1,8 +1,8 @@
 from paddleocr import PaddleOCR as _PaddleOCR
-from app.Worker.model_registry import get_model
 
 from .base import OCRStrategy
-
+from app.celery.model_registry import register_strategy
+@register_strategy
 class PaddleOCRStrategy(OCRStrategy):
 
     @staticmethod

@@ -15,16 +15,18 @@ class Settings(BaseSettings):
     celery_broker_url: str
     celery_worker_running: bool = True
 
-    cdn_strategy: str = "cloudinary"
-    detection_strategy: str = "textsegment"
-    ocr_strategy: str = "paddle"
-    translation_strategy: str = "hunyuan"
+    cdn_strategy: str 
+    detection_strategy: str 
+    ocr_strategy: str 
+    translation_strategy: str 
+    Inpainting :str
+
 
     # SESSION_EXPIRE_SECONDS deleted — duplicate of session_expire_seconds
 
     cdn_bucket: Optional[str] = None
     cdn_region: Optional[str] = None
-
+    openrouterapikey : str 
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

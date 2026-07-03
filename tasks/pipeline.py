@@ -46,6 +46,8 @@ def _glue_pages(page_ids: list[str], images: list[np.ndarray]) -> tuple[np.ndarr
     return canvas, pages_meta
 
 
+#outbox
+
 @celery.task(bind=True, max_retries=3, default_retry_delay=30)
 def process(self, job: dict) -> dict:
     user_id = job["user_id"]

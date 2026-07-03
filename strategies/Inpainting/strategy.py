@@ -1,11 +1,11 @@
 from app.strategies.ocr.paddleocr import PaddleOCRAPIStrategy
 from app.strategies.ocr.base import OCRStrategy
 from functools import lru_cache
-from .paddle import PaddleOCRStrategy
+from .LaMe import LaMeInpainting
 
 @lru_cache(maxsize=None)
 def get_ocr_strategy(name: str) -> OCRStrategy:
-    if name == "PaddleOCRStrategy":
-        return PaddleOCRStrategy()
+    if name == "LaMeInpainting":
+        return LaMeInpainting()
     else:
-        raise ValueError(f"Unknown OCR strategy: {name}")
+        raise ValueError(f"Unknown Inpainting strategy: {name}")

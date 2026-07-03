@@ -7,7 +7,7 @@ from functools import lru_cache
 def get_cdn_strategy(name: str) -> CDNStrategy:
     if name == "local":
         return LocalCDNStrategy()
-    elif name == "cloudinary":
+    elif name == "CloudinaryCDNStrategy":
         return CloudinaryCDNStrategy()
     else:
         raise ValueError(f"Unknown CDN strategy: {name}")

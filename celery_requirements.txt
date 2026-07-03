@@ -1,42 +1,44 @@
-
-
 # ===== Async & HTTP =====
 aiohttp
 aiofiles
-redis       
+redis
 
 # ===== Task Queue (Celery + RabbitMQ) =====
 celery[rabbitmq]
 kombu
 billiard
 vine
-flower                    
+flower
 
 # ===== Auth & Config =====
 pydantic
 pydantic-settings
 python-dotenv
 
-# ===== ML / CV Pipeline =====
+# ===== ML / CV Pipeline (CPU only) =====
+--extra-index-url https://download.pytorch.org/whl/cpu
 torch
+torchvision
 transformers
 ultralytics
+
+--extra-index-url https://www.paddlepaddle.org.cn/packages/stable/cpu/
+paddlepaddle==3.3.0
 paddleocr
-paddlepaddle                # required by paddleocr but not auto-installed — confirm GPU vs CPU build matches your Dockerfile
-opencv-python
-numpy<2                     # hard ceiling: torch/paddleocr/opencv builds still break on numpy 2.x as of this stack
+
+opencv-python-headless
+numpy<2                    # hard ceiling: torch/paddleocr/opencv builds still break on numpy 2.x
 
 # ===== Text Rendering & Graphics =====
-pycairo                     # requires libcairo2-dev + pkg-config in the image
-PyGObject                   # requires libgirepository1.0-dev, gir1.2-gtk-3.0, libcairo2-dev, python3-dev
+pycairo                    # requires libcairo2-dev + pkg-config in the image
+PyGObject                  # requires libgirepository1.0-dev, gir1.2-gtk-3.0, libcairo2-dev, python3-dev
 
 # ===== External Services =====
 huggingface_hub
-inference-sdk                # Roboflow
+inference-sdk              # Roboflow
 cloudinary
 requests
 
 # ===== Image =====
 Pillow
 translate
-

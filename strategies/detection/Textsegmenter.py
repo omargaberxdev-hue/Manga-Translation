@@ -7,13 +7,14 @@ from huggingface_hub import hf_hub_download
 from app.utils.Lame import Inpainting
 from app.utils.image_utils import download_image
 
-from app.Worker.model_registry import get_model
 
 from .base import DetectionStrategy
 
 
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import Future
+
+from app.celery.model_registry import register_strategy , get_model
 
 
 # [{
@@ -33,16 +34,17 @@ from concurrent.futures import Future
 #  }
 # }]
 
+@register_strategy
 class TextSegmenter(DetectionStrategy):
     
     @staticmethod
-    def load_text_segmentation_model():
+    def load_model():
         models_dir = Path(__file__).parent.parent.parent / "models"
         models_dir.mkdir(parents=True, exist_ok=True)
         
         model_weight_path = models_dir / "comic-text-segmenter.pt"
         if not model_weight_path.exists():
-            hf_hub_download(                          # don't reassign, path already set
+            hf_hub_download(                         
                 repo_id="ogkalu/comic-text-segmenter-yolov8m",
                 filename="comic-text-segmenter.pt",
                 local_dir=str(models_dir),
@@ -51,9 +53,14 @@ class TextSegmenter(DetectionStrategy):
         
         return YOLO(model_weight_path)                #
 
+    
+    @classmethod
+    def share_memory(cls, model):
+        model.model.share_memory()
+
 
     def __init__(self):
-        self.model = get_model("detection")
+        self.model = get_model(settings.detection_strategy)
         self.executor = ThreadPoolExecutor()  
 
 

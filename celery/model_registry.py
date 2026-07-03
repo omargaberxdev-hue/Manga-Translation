@@ -1,27 +1,27 @@
-"""Process-local model registry. Populated by TranslationWorker's
-_load_models(); read by strategy classes via getters, never by direct
-import of a module-level variable (which snapshots at import time and
-goes stale — see worker GPU loading timeline)."""
+# app/Worker/model_registry.py
 
-_models = {
-    "inpaint": None,
-    "detection": None,
-    "extraction": None,
-    "device": None,
-    "translation":None
-}
+_models = {}
+_strategy_registry = {}
 
 
-def set_model(name: str, value):
-    _models[name] = value
+def register_strategy(cls):
+    """Decorator: add to app/strategies/base.py or each strategy file.
+    Registers a strategy class under its own class name so it can be
+    resolved dynamically from a string (e.g. from .env)."""
+    _strategy_registry[cls.__name__] = cls
+    return cls
 
-
-def get_model(name: str):
-    value = _models[name]
-    if value is None:
-        raise RuntimeError(
-            f"Model '{name}' not loaded yet in this process. "
-            f"Was _load_models() called (via import-time CPU path or "
-            f"worker_process_init for GPU)?"
+def get_strategy_class(name: str):
+    try:
+        return _strategy_registry[name]
+    except KeyError:
+        raise ValueError(
+            f"Unknown strategy '{name}'. Registered strategies: "
+            f"{list(_strategy_registry.keys())}"
         )
-    return value
+
+def set_model(key, value):
+    _models[key] = value
+
+def get_model(key):
+    return _models[key]
