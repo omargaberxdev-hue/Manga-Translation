@@ -49,3 +49,15 @@ class CloudinaryCDNStrategy(CDNStrategy):
 
         result = await loop.run_in_executor(None, _upload)
         return result["secure_url"]
+
+
+      
+   def uploadsync(self, data: bytes, filename: str) -> str:
+        result = cloudinary.uploader.upload(
+            BytesIO(data),
+            public_id=filename,
+            resource_type="auto",
+            folder="my_app_uploads",
+            overwrite=True
+        )
+        return result["secure_url"]

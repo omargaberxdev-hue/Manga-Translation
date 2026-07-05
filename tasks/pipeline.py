@@ -15,7 +15,6 @@ from app.strategies.ocr.strategy import get_ocr_strategy
 from app.strategies.translation.strategy import get_translation_stratgy
 
 
-
 def _glue_pages(page_ids: list[str], images: list[np.ndarray]) -> tuple[np.ndarray, list[dict]]:
     """Stitch translated page images side-by-side into a single canvas."""
     height = 0
@@ -85,7 +84,9 @@ def process(self, job: dict) -> dict:
         canvas, pages_meta = _glue_pages(page_ids, final_images)
         _, img_encoded = cv2.imencode(".png", canvas)
         img_bytes = img_encoded.tobytes()
-        cdn_url = cdn_strategy.upload(img_bytes, f"{chapter_id}_translated.png")
+        cdn_url = cdn_strategy.uploadsync(img_bytes, f"{chapter_id}_translated.png")
+
+        print(f"cdn url === {cdn_url}")
 
         ImageCache.redis.xadd(f"notifications:{user_id}", {
             "user_id": user_id,

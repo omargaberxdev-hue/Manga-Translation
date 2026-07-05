@@ -64,7 +64,7 @@ class OpenRouterTranslation(TranslationStrategy):
                 "Content-Type": "application/json",
             },
             json={
-                "model": "openai/gpt-oss-120b:free",
+                "model": "poolside/laguna-xs.2:free",
                 "messages": [
                     {"role": "system", "content": self.SYSTEM_PROMPT},
                     {
@@ -76,11 +76,13 @@ class OpenRouterTranslation(TranslationStrategy):
                     },
                 ],
                 "response_format": {"type": "json_object"},
-                "reasoning": {"enabled": False},
             },
             timeout=30,
         )
+        if response.status_code >= 400:
+           print(f"OpenRouter error body: {response.text}")
         response.raise_for_status()
+        
 
         message_content = response.json()["choices"][0]["message"]["content"]
         result = json.loads(message_content)

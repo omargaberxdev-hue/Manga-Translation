@@ -136,6 +136,6 @@ class TextSegmenter(DetectionStrategy):
         inpaint = get_inpaint_strategy(settings.Inpainting)
 
         # in detect():
-        future = self.executor.submit(inpaint.process_image_with_lama, all_boxes, page_images)
+        future = self.executor.submit(inpaint.process_image, all_boxes, page_images)
 
         return (all_boxes, future)

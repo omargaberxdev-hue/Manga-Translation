@@ -41,7 +41,7 @@ class TrOCRStrategy(OCRStrategy):
         if self.use_gpu:
             pixel_values = pixel_values.to("cuda")
 
-        generated_ids = self.model_instance.generate(pixel_values)
+        generated_ids = self.model_instance.generate(pixel_values , max_new_tokens=32)
         texts = self.processor_instance.batch_decode(generated_ids, skip_special_tokens=True)
 
         all_results = []

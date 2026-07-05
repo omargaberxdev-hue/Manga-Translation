@@ -7,7 +7,7 @@ from huggingface_hub import hf_hub_download
 
 from pathlib import Path
 from .base import InpaintingStrategy
-from app.celery.model_registry import register_strategy
+from app.celery.model_registry import register_strategy ,get_model
 
 @register_strategy
 class LaMeInpainting(InpaintingStrategy):
@@ -82,7 +82,7 @@ class LaMeInpainting(InpaintingStrategy):
 
         img_pil    = Image.fromarray(cv2.cvtColor(img_np, cv2.COLOR_BGR2RGB))
         mask_pil   = Image.fromarray(combined_mask)
-        result_pil = Inpainting.lama_inpaint(lama_model, device, img_pil, mask_pil)
+        result_pil = LaMeInpainting.lama_inpaint(lama_model, device, img_pil, mask_pil)
         result_np  = cv2.cvtColor(np.array(result_pil), cv2.COLOR_RGB2BGR)
 
         if result_np.shape[:2] != (h, w):
