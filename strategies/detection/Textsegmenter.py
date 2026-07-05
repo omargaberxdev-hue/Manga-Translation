@@ -14,7 +14,7 @@ from .base import DetectionStrategy
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import Future
 
-from app.celery.model_registry import register_strategy , get_model
+from app.celery.model_registry import register_strategy, get_model
 
 from app.config import settings
 
@@ -37,86 +37,79 @@ from app.config import settings
 
 @register_strategy
 class TextSegmenter(DetectionStrategy):
-    
+
     @staticmethod
     def load_model():
         models_dir = Path(__file__).parent.parent.parent / "models"
         models_dir.mkdir(parents=True, exist_ok=True)
-        
+
         model_weight_path = models_dir / "comic-text-segmenter.pt"
         if not model_weight_path.exists():
-            hf_hub_download(                         
+            hf_hub_download(
                 repo_id="ogkalu/comic-text-segmenter-yolov8m",
                 filename="comic-text-segmenter.pt",
                 local_dir=str(models_dir),
                 local_dir_use_symlinks=False
             )
-        
-        return YOLO(model_weight_path)                #
 
-    
+        return YOLO(model_weight_path)
+
     @classmethod
     def share_memory(cls, model):
         model.model.share_memory()
 
-
     def __init__(self):
         self.model = get_model("detection")
-        self.executor = ThreadPoolExecutor()  
-
+        self.executor = ThreadPoolExecutor()
 
     def detect(self, data) -> tuple[list, Future[list]]:
-        manga_id = data['manga_id']
-
-        image_url =  data['canvas_url']
-
-        chapter_data = data['chapter_data']
-
-        pages =  data["pages"]
+        manga_id = data['MangaID']
+        image_url = data['CanvasURL']
+        chapter_data = data['Chapters_data']
+        pages = chapter_data["Pages"]  # FIX: was data["Pages"] — Pages is nested inside Chapters_data
 
         all_boxes = []
 
         # Load chapter canvas
-        img =  download_image(image_url)
+        img = download_image(image_url)
         canvas_np = np.array(img)
-   
-           
-         # Build page crops and metadata
+
+        # Build page crops and metadata
         page_images = []
         page_metas = []
 
         for page in pages:
-            page_id = page['page_id']
+            page_id = page['PageID']  # FIX: was page['page_id'] — build_canvas produces "PageID"
 
             x1, y1, w, h = page['x1'], page['y1'], page['w'], page['h']
-            page_crop = canvas_np[y1:y1+h, x1:x1+w]
-                
+            page_crop = canvas_np[y1:y1 + h, x1:x1 + w]
+
             page_images.append(page_crop)
             page_metas.append({
-                    "page_id": page['page_id'],
-                    "image" : page_crop,
-                    "page_x1": x1,
-                    "page_y1": y1,
-                    "manga_id": manga_id
-                })
+                "page_id": page_id,
+                "image": page_crop,
+                "page_x1": x1,
+                "page_y1": y1,
+                "manga_id": manga_id
+            })
 
         # Batch detect all pages in this chapter
         results = self.model(page_images, imgsz=1024, verbose=False)
-            
+
         # zip aligns: results[i] -> page_images[i] -> page_metas[i]
         for result, page_img, meta in zip(results, page_images, page_metas):
             page_boxes = []
-            
+
             if result.boxes is None or len(result.boxes) == 0:
                 all_boxes.append(page_boxes)
                 continue
 
             boxes_xywh = result.boxes.xywh.cpu().numpy()
             confs = result.boxes.conf.cpu().numpy()
-            
+
             for i, (box, conf) in enumerate(zip(boxes_xywh, confs)):
                 cx, cy, bw, bh = box
-               
+
                 # Crop AOI from the page image using relative box coords
                 rx1 = int(cx - bw / 2)
                 ry1 = int(cy - bh / 2)
@@ -129,20 +122,17 @@ class TextSegmenter(DetectionStrategy):
                     "box_index": i,
                     "offset_x": rx1,
                     "offset_y": ry1,
-                    "weidth": bw,
+                    "width": bw,  # FIX: was "weidth"
                     "height": bh,
                     "confidence": float(conf),
                     "image": aoi_crop
-
                 })
 
-            all_boxes.append(page_boxes)  
-          
-        
+            all_boxes.append(page_boxes)
+        print("all boxes finished")
         inpaint = get_inpaint_strategy(settings.Inpainting)
-         
+
         # in detect():
         future = self.executor.submit(inpaint.process_image_with_lama, all_boxes, page_images)
 
-
-        return (all_boxes , future )
+        return (all_boxes, future)

@@ -14,11 +14,12 @@ class PaddleOCRStrategy(OCRStrategy):
             use_doc_unwarping=False,
             use_textline_orientation=False,
             lang=Lang,
-            device="gpu" if use_gpu else "cpu",
+            device="cpu",
             enable_mkldnn=False,
+            enable_cinn=False,
+            cpu_threads=1,
         )
         return ocr
-
     def __init__(self, Lang):
         use_gpu = (get_model("device") == "cuda")
         self.ocr = PaddleOCRStrategy.UseModel(Lang, use_gpu)

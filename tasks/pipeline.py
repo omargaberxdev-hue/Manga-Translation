@@ -56,7 +56,7 @@ def process(self, job: dict) -> dict:
 
     if not cache.acquire_lock(lock_key, ttl=3600):
         return {"status": "skipped", "reason": "already_processing"}
-
+    print("creating stratrgy")
     detector = get_detection_stratgy(settings.detection_strategy)
     ocr_strategy = get_ocr_strategy(settings.ocr_strategy, original_lang )
     cdn_strategy = get_cdn_strategy(settings.cdn_strategy)
