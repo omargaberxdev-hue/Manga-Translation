@@ -23,7 +23,7 @@ class ImageCache:
     @classmethod
     def connectAsync(cls):
         if cls.aioredis is None:
-            cls.aioredis = aioredis.from_url(settings.redis_url, decode_responses=True)
+            cls.aioredis = aioredis.from_url(settings.redis_url,   socket_timeout=20,   decode_responses=True)
 
     def _key(self, key: str) -> str:
         return f"{self.prefix}:{key}"

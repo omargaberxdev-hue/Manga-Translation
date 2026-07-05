@@ -61,7 +61,7 @@ class TextSegmenter(DetectionStrategy):
 
 
     def __init__(self):
-        self.model = get_model(settings.detection_strategy)
+        self.model = get_model("detection")
         self.executor = ThreadPoolExecutor()  
 
 

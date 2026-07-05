@@ -44,6 +44,7 @@ async def create_chapters(
         "MangaID": payload.MangaID,
         "CanvasURL": canvas_url,
         "target_language": payload.target_language,
+        "original_lang":payload.original_lang,
         "Chapters_data": {
             "ChapterID": chapter_id,
             "Pages": positions,

@@ -28,11 +28,12 @@ def _load_models(use_gpu: bool):
     detection_model = _load_strategy_model(settings.detection_strategy, use_gpu)
     ocr_model = _load_strategy_model(settings.ocr_strategy, use_gpu)
     inpaint_model = _load_strategy_model(settings.Inpainting, use_gpu)
-    _load_strategy_model(settings.translation_strategy, use_gpu)
+    translation_strategy =  _load_strategy_model(settings.translation_strategy, use_gpu)
 
     set_model("inpaint", inpaint_model)
     set_model("detection", detection_model)
     set_model("extraction", ocr_model)
+    set_model("translation" , translation_strategy)
     set_model("device", device)
 
     print(f"Models loaded on {device}.", flush=True)

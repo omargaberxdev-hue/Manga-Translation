@@ -16,7 +16,7 @@ class TranslateComicRequest(BaseModel):
     MangaID: str
     ChapterID: int
     target_language: str
-
+    original_lang : str
     
 class TranslateComicResponse(BaseModel):
     MangaID: str

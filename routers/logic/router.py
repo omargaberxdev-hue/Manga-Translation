@@ -14,6 +14,10 @@ from fastapi import Request
 from app.depends.depends import get_cdn, get_cache
 import asyncio
 
+from typing import Annotated
+
+from fastapi import FastAPI, Header
+
 router = APIRouter(prefix="/logic", tags=["Logic"], dependencies=[Depends(get_current_user)])
 
 
@@ -39,10 +43,10 @@ async def translate_comic(
 
 
 @router.get("/events/")
-async def sse(user_id: str, request: Request, last_event_id: str | None = None  , user=Depends(get_current_user), cache = Depends(get_cache)  ):
+async def sse( request: Request, last_event_id:  Annotated[str | None, Header()] = None  , user=Depends(get_current_user), cache = Depends(get_cache)  ):
     start_id = last_event_id if last_event_id else "$"
     return StreamingResponse(
-        event_stream(user.user_id, request, cache, start_id),
+        event_stream(user.id, request, cache, start_id),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
     )
