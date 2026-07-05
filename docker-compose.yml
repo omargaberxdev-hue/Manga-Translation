@@ -67,6 +67,8 @@ services:
       context: .
       dockerfile: celery.dockerfile              
     restart: always
+    cap_add:
+      - SYS_PTRACE
     shm_size: '7gb'
     ulimits:
       nofile:

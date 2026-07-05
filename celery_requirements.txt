@@ -19,12 +19,11 @@ python-dotenv
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch
 torchvision
-transformers
+transformers==4.46.3
 ultralytics
+sentencepiece
+protobuf
 
---extra-index-url https://www.paddlepaddle.org.cn/packages/stable/cpu/
-paddlepaddle==3.3.0
-paddleocr
 
 opencv-python-headless
 numpy<2                    # hard ceiling: torch/paddleocr/opencv builds still break on numpy 2.x

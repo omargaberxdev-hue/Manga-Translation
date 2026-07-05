@@ -42,7 +42,7 @@ def _glue_pages(page_ids: list[str], images: list[np.ndarray]) -> tuple[np.ndarr
         cursor += w
 
     return canvas, pages_meta
-@celery.task(bind=True, max_retries=3, default_retry_delay=30)
+@celery.task(bind=True, max_retries=3, default_retry_delay=10)
 def process(self, job: dict) -> dict:
     user_id = job["user_id"]
     comic_id = job["MangaID"]
@@ -51,6 +51,7 @@ def process(self, job: dict) -> dict:
     chapter_id = job["Chapters_data"]["ChapterID"]
     page_ids = [p["PageID"] for p in job["Chapters_data"]["Pages"]]
 
+    
     cache = ImageCache()
     lock_key = f"task:{self.request.id}"   # scoped to this task's broker identity, not business keys
 
@@ -61,12 +62,13 @@ def process(self, job: dict) -> dict:
     ocr_strategy = get_ocr_strategy(settings.ocr_strategy, original_lang )
     cdn_strategy = get_cdn_strategy(settings.cdn_strategy)
     translation_strategy = get_translation_stratgy(settings.translation_strategy ,target_language)
-
+    print("finish creating starrtgy")
     try:
         boxes, inpaint_future = detector.detect(job)
 
         if not boxes:
             raise ValueError("No text regions detected")
+            
         print (f"the length after detection boxes{len(boxes)}")
         
         ocr_result = ocr_strategy.extract(boxes)

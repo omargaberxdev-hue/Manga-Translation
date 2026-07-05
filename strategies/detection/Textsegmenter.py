@@ -1,3 +1,4 @@
+
 from pathlib import Path
 import numpy as np
 from PIL import Image
@@ -40,6 +41,8 @@ class TextSegmenter(DetectionStrategy):
 
     @staticmethod
     def load_model():
+        from ultralytics import settings as yolo_settings
+        yolo_settings.update({"sync": False})
         models_dir = Path(__file__).parent.parent.parent / "models"
         models_dir.mkdir(parents=True, exist_ok=True)
 
@@ -92,10 +95,10 @@ class TextSegmenter(DetectionStrategy):
                 "page_y1": y1,
                 "manga_id": manga_id
             })
-
+        print("before detection")
         # Batch detect all pages in this chapter
         results = self.model(page_images, imgsz=1024, verbose=False)
-
+        print(f"after detection {len(results)}")
         # zip aligns: results[i] -> page_images[i] -> page_metas[i]
         for result, page_img, meta in zip(results, page_images, page_metas):
             page_boxes = []

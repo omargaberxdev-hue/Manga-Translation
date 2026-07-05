@@ -24,7 +24,7 @@ def _load_strategy_model(strategy_name: str, use_gpu: bool):
 
 def _load_models(use_gpu: bool):
     device = "cuda" if use_gpu else "cpu"
-
+    
     detection_model = _load_strategy_model(settings.detection_strategy, use_gpu)
     ocr_model = _load_strategy_model(settings.ocr_strategy, use_gpu)
     inpaint_model = _load_strategy_model(settings.Inpainting, use_gpu)
