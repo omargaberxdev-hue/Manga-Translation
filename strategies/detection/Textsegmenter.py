@@ -19,6 +19,7 @@ from app.celery.model_registry import register_strategy, get_model
 
 from app.config import settings
 
+from app.Exception import DetectionException
 # [{
 #  "MangaID": "string",
 #  "CanvasURL": "string",
@@ -36,6 +37,10 @@ from app.config import settings
 #  }
 # }]
 
+
+import logging
+
+logger = logging.getLogger(__name__)   
 @register_strategy
 class TextSegmenter(DetectionStrategy):
 
@@ -95,10 +100,13 @@ class TextSegmenter(DetectionStrategy):
                 "page_y1": y1,
                 "manga_id": manga_id
             })
-        print("before detection")
         # Batch detect all pages in this chapter
-        results = self.model(page_images, imgsz=1024, verbose=False)
-        print(f"after detection {len(results)}")
+        try:
+            results = self.model(page_images, imgsz=1024, verbose=False)
+        except Exception as e:
+            raise DetectionException(
+                "YOLO inference failed") from e
+
         # zip aligns: results[i] -> page_images[i] -> page_metas[i]
         for result, page_img, meta in zip(results, page_images, page_metas):
             page_boxes = []

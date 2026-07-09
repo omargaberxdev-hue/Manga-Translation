@@ -52,7 +52,7 @@ class CloudinaryCDNStrategy(CDNStrategy):
 
 
       
-   def uploadsync(self, data: bytes, filename: str) -> str:
+    def uploadsync(self, data: bytes, filename: str) -> str:
         result = cloudinary.uploader.upload(
             BytesIO(data),
             public_id=filename,

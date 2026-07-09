@@ -61,9 +61,13 @@ class LaMeInpainting(InpaintingStrategy):
         img_t = F.pad(img_t, (0, pad_w, 0, pad_h), mode="reflect")
         msk_t = F.pad(msk_t, (0, pad_w, 0, pad_h), mode="reflect")
 
-        with torch.no_grad():
-            result_t = model(img_t, msk_t)
-
+  
+        try:
+            with torch.no_grad():
+                result_t = model(img_t, msk_t)
+        except Exception as e:
+            raise InpaintingException("LaMa inpainting failed", stage="inpainting") from e
+            
         result_t  = result_t[:, :, :h, :w]
         result_np = result_t.squeeze(0).permute(1, 2, 0).cpu().numpy()
         result_np = np.clip(result_np * 255, 0, 255).astype(np.uint8)

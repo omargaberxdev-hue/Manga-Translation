@@ -14,6 +14,18 @@ from app.strategies.detection.factory import get_detection_stratgy
 from app.strategies.ocr.strategy import get_ocr_strategy
 from app.strategies.translation.strategy import get_translation_stratgy
 
+from app.exceptions import (
+    DetectionException,
+    InpaintingException,
+    OCRException,
+    TranslationException,
+    RenderingException,
+)
+
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def _glue_pages(page_ids: list[str], images: list[np.ndarray]) -> tuple[np.ndarray, list[dict]]:
     """Stitch translated page images side-by-side into a single canvas."""
@@ -41,8 +53,18 @@ def _glue_pages(page_ids: list[str], images: list[np.ndarray]) -> tuple[np.ndarr
         cursor += w
 
     return canvas, pages_meta
+
+
 @celery.task(bind=True, max_retries=3, default_retry_delay=10)
 def process(self, job: dict) -> dict:
+    logger_dict = {
+        "task_id": self.request.id,
+        "user_id": job["user_id"],
+        "comic_id": job["MangaID"],
+        "chapter_id": job["Chapters_data"]["ChapterID"],
+    }
+    logger.info("Task_created", extra=logger_dict)
+
     user_id = job["user_id"]
     comic_id = job["MangaID"]
     target_language = job["target_language"]
@@ -50,28 +72,35 @@ def process(self, job: dict) -> dict:
     chapter_id = job["Chapters_data"]["ChapterID"]
     page_ids = [p["PageID"] for p in job["Chapters_data"]["Pages"]]
 
-    
     cache = ImageCache()
-    lock_key = f"task:{self.request.id}"   # scoped to this task's broker identity, not business keys
+    lock_key = f"task:{self.request.id}"
 
     if not cache.acquire_lock(lock_key, ttl=3600):
         return {"status": "skipped", "reason": "already_processing"}
+
     print("creating stratrgy")
     detector = get_detection_stratgy(settings.detection_strategy)
-    ocr_strategy = get_ocr_strategy(settings.ocr_strategy, original_lang )
+    ocr_strategy = get_ocr_strategy(settings.ocr_strategy, original_lang)
     cdn_strategy = get_cdn_strategy(settings.cdn_strategy)
-    translation_strategy = get_translation_stratgy(settings.translation_strategy ,target_language)
+    translation_strategy = get_translation_stratgy(settings.translation_strategy, target_language)
     print("finish creating starrtgy")
+
     try:
         boxes, inpaint_future = detector.detect(job)
+        logger.info(
+            "detection_complete",
+            extra={"task_id": self.request.id, "chapter_id": chapter_id, "num_boxes": len(boxes)},
+        )
 
         if not boxes:
             raise ValueError("No text regions detected")
-            
-        print (f"the length after detection boxes{len(boxes)}")
-        
+
         ocr_result = ocr_strategy.extract(boxes)
+        logger.info("ocr_complete", extra={"task_id": self.request.id, "chapter_id": chapter_id})
+
         after_translation = translation_strategy.translate_blocks(ocr_result)
+        logger.info("translation_complete", extra={"task_id": self.request.id, "chapter_id": chapter_id})
+
         image_cleared = inpaint_future.result()
         final_images = render_translated_image(image_cleared, after_translation)
 
@@ -86,9 +115,10 @@ def process(self, job: dict) -> dict:
         img_bytes = img_encoded.tobytes()
         cdn_url = cdn_strategy.uploadsync(img_bytes, f"{chapter_id}_translated.png")
 
-        print(f"cdn url === {cdn_url}")
+        logger.info("Image have been rendered and uploaded",
+                    extra={"task_id": self.request.id, "chapter_id": chapter_id, "cdn_url": cdn_url})
 
-        ImageCache.redis.xadd(f"notifications:{user_id}", {
+        request_redis = ImageCache.redis.xadd(f"notifications:{user_id}", {
             "user_id": user_id,
             "status": "success",
             "pages_meta": json.dumps(pages_meta),
@@ -98,10 +128,25 @@ def process(self, job: dict) -> dict:
             "cached": "false",
         })
 
+        logger.info("Image has been pushed to redis stream",
+                    extra={"task_id": self.request.id, "chapter_id": chapter_id, "request_id": request_redis})
+
         cache.delete(lock_key)
         return {"status": "success", "cdn_url": cdn_url, "pages_meta": pages_meta}
 
     except Exception as exc:
+        if isinstance(exc, DetectionException):
+            logger.warning("Detection stage failed, will retry", extra=logger_dict)
+        elif isinstance(exc, InpaintingException):
+            logger.warning("Inpainting failed, will retry", extra=logger_dict)
+        elif isinstance(exc, OCRException):
+            logger.warning("OCR failed, will retry", extra=logger_dict)
+        elif isinstance(exc, TranslationException):
+            logger.warning("Translation failed, will retry", extra=logger_dict)
+        elif isinstance(exc, RenderingException):
+            logger.warning("Rendering failed, will retry", extra=logger_dict)
+        else:
+            logger.warning("Unexpected error (possibly CDN/cache)", extra=logger_dict, exc_info=True)
 
         is_final_attempt = self.request.retries >= self.max_retries
 

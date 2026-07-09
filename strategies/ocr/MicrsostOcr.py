@@ -5,6 +5,7 @@ from transformers import TrOCRProcessor, VisionEncoderDecoderModel
 from .base import OCRStrategy
 
 from app.celery.model_registry import register_strategy, get_model
+from app.exceptions import OCRException
 
 
 @register_strategy
@@ -35,14 +36,17 @@ class TrOCRStrategy(OCRStrategy):
         if not flat_image:
             return [[] for _ in pages]
 
-        images = [Image.fromarray(img).convert("RGB") for img in flat_image]
+        try:
+            images = [Image.fromarray(img).convert("RGB") for img in flat_image]
 
-        pixel_values = self.processor_instance(images, return_tensors="pt").pixel_values
-        if self.use_gpu:
-            pixel_values = pixel_values.to("cuda")
+            pixel_values = self.processor_instance(images, return_tensors="pt").pixel_values
+            if self.use_gpu:
+                pixel_values = pixel_values.to("cuda")
 
-        generated_ids = self.model_instance.generate(pixel_values , max_new_tokens=32)
-        texts = self.processor_instance.batch_decode(generated_ids, skip_special_tokens=True)
+            generated_ids = self.model_instance.generate(pixel_values, max_new_tokens=32)
+            texts = self.processor_instance.batch_decode(generated_ids, skip_special_tokens=True)
+        except Exception as e:
+            raise OCRException("TrOCR inference failed", stage="ocr") from e
 
         all_results = []
         cursor = 0
@@ -62,7 +66,7 @@ class TrOCRStrategy(OCRStrategy):
                     "offset_y": box_meta["offset_y"],
                     "width": box_meta["width"],
                     "height": box_meta["height"],
-                    "confidence": box_meta["confidence"],  # note: this is detection confidence, not OCR confidence — was 1.0 before
+                    "confidence": box_meta["confidence"],
                     "ocr_text": text,
                 })
 
