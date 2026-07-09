@@ -1,6 +1,5 @@
 import torch
 from PIL import Image
-from transformers import TrOCRProcessor, VisionEncoderDecoderModel
 
 from .base import OCRStrategy
 
@@ -13,8 +12,8 @@ class TrOCRStrategy(OCRStrategy):
 
     @staticmethod
     def load_model(use_gpu: bool = False):
-        processor_instance = TrOCRProcessor.from_pretrained("microsoft/trocr-base-printed")
-        model_instance = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-printed")
+        processor_instance = TrOCRProcessor.from_pretrained("microsoft/trocr-base-handwritten")
+        model_instance = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-handwritten")
         if use_gpu:
             model_instance = model_instance.to("cuda")
 

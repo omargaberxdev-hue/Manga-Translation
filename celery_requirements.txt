@@ -41,3 +41,7 @@ requests
 # ===== Image =====
 Pillow
 translate
+
+
+rapidocr
+onnxruntime
