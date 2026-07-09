@@ -19,7 +19,7 @@ from app.celery.model_registry import register_strategy, get_model
 
 from app.config import settings
 
-from app.Exception import DetectionException
+from app.Exceptions.Internal_error import DetectionException
 # [{
 #  "MangaID": "string",
 #  "CanvasURL": "string",

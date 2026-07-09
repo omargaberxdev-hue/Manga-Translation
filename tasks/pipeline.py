@@ -14,7 +14,7 @@ from app.strategies.detection.factory import get_detection_stratgy
 from app.strategies.ocr.strategy import get_ocr_strategy
 from app.strategies.translation.strategy import get_translation_stratgy
 
-from app.exceptions import (
+from app.Exceptions.Internal_error import (
     DetectionException,
     InpaintingException,
     OCRException,
@@ -114,7 +114,7 @@ def process(self, job: dict) -> dict:
         _, img_encoded = cv2.imencode(".png", canvas)
         img_bytes = img_encoded.tobytes()
         cdn_url = cdn_strategy.uploadsync(img_bytes, f"{chapter_id}_translated.png")
-
+        print(cdn_url)
         logger.info("Image have been rendered and uploaded",
                     extra={"task_id": self.request.id, "chapter_id": chapter_id, "cdn_url": cdn_url})
 
@@ -148,10 +148,23 @@ def process(self, job: dict) -> dict:
         else:
             logger.warning("Unexpected error (possibly CDN/cache)", extra=logger_dict, exc_info=True)
 
+        cache.delete(lock_key)  
+
         is_final_attempt = self.request.retries >= self.max_retries
 
         if is_final_attempt:
-            cache.delete(lock_key)
+            try:
+                ImageCache.redis.xadd("failed_jobs", {
+                        "task_id": self.request.id,
+                        "manga_id": comic_id,
+                        "chapter_id": chapter_id,
+                        "user_id": user_id,
+                        "error": str(exc),
+                        "data": json.dumps(job),     
+                        "stage": exc.__class__.__name__,
+                    })
+            except Exception:
+                    pass
 
             try:
                 ImageCache.redis.xadd(f"notifications:{user_id}", {
@@ -160,17 +173,6 @@ def process(self, job: dict) -> dict:
                     "error": str(exc),
                     "comic_id": comic_id,
                     "chapter_id": chapter_id,
-                })
-            except Exception:
-                pass
-
-            try:
-                ImageCache.redis.xadd("failed_jobs", {
-                    "task_id": self.request.id,
-                    "manga_id": comic_id,
-                    "chapter_id": chapter_id,
-                    "user_id": user_id,
-                    "error": str(exc),
                 })
             except Exception:
                 pass

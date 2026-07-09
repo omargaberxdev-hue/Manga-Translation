@@ -5,9 +5,8 @@ import logging.handlers
 import pathlib
 
 
-
 def setup_logging():
-    config_file = pathlib.Path("app.logger_config")
+    config_file = pathlib.Path(__file__).parent.parent.parent / "logger_config.json"
     with open(config_file) as f_in:
         config = json.load(f_in)
 
@@ -16,4 +15,3 @@ def setup_logging():
     if queue_handler is not None:
         queue_handler.listener.start()
         atexit.register(queue_handler.listener.stop)
-

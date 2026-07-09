@@ -1,10 +1,11 @@
 import torch
 from PIL import Image
+from transformers import TrOCRProcessor, VisionEncoderDecoderModel
 
 from .base import OCRStrategy
 
 from app.celery.model_registry import register_strategy, get_model
-from app.exceptions import OCRException
+from app.Exceptions.Internal_error import OCRException
 
 
 @register_strategy

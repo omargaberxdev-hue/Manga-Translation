@@ -8,7 +8,7 @@ from huggingface_hub import hf_hub_download
 from pathlib import Path
 from .base import InpaintingStrategy
 from app.celery.model_registry import register_strategy, get_model
-from app.exceptions import InpaintingException
+from app.Exceptions.Internal_error import InpaintingException
 
 
 @register_strategy

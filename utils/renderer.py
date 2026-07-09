@@ -6,8 +6,13 @@ gi.require_version('Pango', '1.0')
 gi.require_version('PangoCairo', '1.0')
 from gi.repository import Pango, PangoCairo
 
-from app.exceptions import RenderingException
-
+from app.Exceptions.Internal_error import (
+    DetectionException,
+    InpaintingException,
+    OCRException,
+    TranslationException,
+    RenderingException,
+)
 import logging
 logger = logging.getLogger(__name__)
 

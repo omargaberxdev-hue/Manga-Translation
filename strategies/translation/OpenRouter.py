@@ -6,7 +6,7 @@ import requests
 from .base import TranslationStrategy
 from app.config import settings
 from app.celery.model_registry import register_strategy
-from app.exceptions import TranslationException
+from app.Exceptions.Internal_error import TranslationException
 
 
 @register_strategy
@@ -33,7 +33,7 @@ class OpenRouterTranslation(TranslationStrategy):
                     "Content-Type": "application/json",
                 },
                 json={
-                    "model": "poolside/laguna-xs.2:free",
+                    "model": "tencent/hy3:free",
                     "messages": [
                         {"role": "system", "content": self.SYSTEM_PROMPT},
                         {

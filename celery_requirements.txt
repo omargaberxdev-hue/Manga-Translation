@@ -42,6 +42,3 @@ requests
 Pillow
 translate
 
-
-rapidocr
-onnxruntime
