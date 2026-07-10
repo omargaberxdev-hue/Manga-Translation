@@ -13,7 +13,7 @@ class Chapter(Base):
     comic_name: Mapped[str] = mapped_column(String(500))
     canvas_url_before: Mapped[str] = mapped_column(String(500))
     canvas_url_after: Mapped[Optional[str]] = mapped_column(
-        String(50),
+        String(500),
         nullable=True
     )
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))

@@ -17,6 +17,8 @@ import asyncio
 from typing import Annotated
 
 from fastapi import FastAPI, Header
+from sqlalchemy import select, and_
+from app.models.chapter import Chapter  # match the actual class name/casing
 
 router = APIRouter(prefix="/logic", tags=["Logic"], dependencies=[Depends(get_current_user)])
 
@@ -24,7 +26,7 @@ router = APIRouter(prefix="/logic", tags=["Logic"], dependencies=[Depends(get_cu
 async def translate_comic(
     payload: Annotated[str, Form(...)],
     files: Annotated[List[UploadFile], File()],
-    db: AsyncSession = Depends(get_db),
+    db:Session = Depends(get_db),
     user=Depends(get_current_user),
     cdn=Depends(get_cdn),
     cache=Depends(get_cache),
@@ -36,18 +38,25 @@ async def translate_comic(
     if cached:
         return json.loads(cached)
 
-    stmt = select(chapter).where(
+    stmt = select(Chapter).where(
         and_(
-            chapter.manga_id == parsed_payload.MangaID,
-            chapter.chapter_id == parsed_payload.ChapterID,
+            Chapter.comic_name == parsed_payload.MangaID,
+            Chapter.chapter_id == parsed_payload.ChapterID,
         )
     )
-    result = await db.execute(stmt)
+    result = db.execute(stmt)
     existing_chapter = result.scalar_one_or_none()
-
     if existing_chapter:
-        await cache.setAsync(cache_key, json.dumps(response), ex=60 * 60 * 24)
-        return json.loads(cached)
+        response = {
+            "id": existing_chapter.id,
+            "chapter_id": existing_chapter.chapter_id,
+            "comic_name": existing_chapter.comic_name,
+            "canvas_url_before": existing_chapter.canvas_url_before,
+            "canvas_url_after": existing_chapter.canvas_url_after,
+            "user_id": existing_chapter.user_id,
+        }
+        await cache.setAsync(cache_key, response, ttl=60 * 60 * 24)
+        return response
 
     contents = await asyncio.gather(*[f.read() for f in files])
     process_number = await create_chapters(parsed_payload, contents, user, db, cdn)

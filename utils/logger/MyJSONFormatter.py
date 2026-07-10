@@ -1,7 +1,6 @@
 import datetime as dt
 import json
 import logging
-from typing import override
 
 LOG_RECORD_BUILTIN_ATTRS = {
     "args",

@@ -10,7 +10,7 @@ SessionLocal = None
 def init_engine():
     global engine, SessionLocal
     if engine is not None:
-        return  # already initialized in this process
+        return  
     engine = create_engine(settings.db_url, echo=True, pool_pre_ping=True)
     SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 

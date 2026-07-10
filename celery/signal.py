@@ -61,8 +61,14 @@ def load_models_per_worker(**kwargs):
         if torch.cuda.is_available():
             _load_models(use_gpu=True)
         ImageCache.connectsync()
-        setup_logging()
+
         init_engine()
+
+        from app.models import database
+        print("SessionLocal:", database.SessionLocal)
+        print("engine:", database.engine)
+        
+        setup_logging()
     except Exception:
         import traceback
         print(">>> EXCEPTION IN worker_process_init <<<", flush=True)
