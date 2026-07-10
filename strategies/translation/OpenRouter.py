@@ -33,7 +33,7 @@ class OpenRouterTranslation(TranslationStrategy):
                     "Content-Type": "application/json",
                 },
                 json={
-                    "model": "tencent/hy3:free",
+                    "model": "poolside/laguna-xs-2.1:free",
                     "messages": [
                         {"role": "system", "content": self.SYSTEM_PROMPT},
                         {

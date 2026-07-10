@@ -8,6 +8,8 @@ from .model_registry import set_model, get_strategy_class
 from app.config import settings
 from app.utils.logger.setuplogger import setup_logging
 
+from  app.models.database import init_engine
+
 def _load_strategy_model(strategy_name: str, use_gpu: bool):
     strategy_cls = get_strategy_class(strategy_name)
 
@@ -60,6 +62,7 @@ def load_models_per_worker(**kwargs):
             _load_models(use_gpu=True)
         ImageCache.connectsync()
         setup_logging()
+        init_engine()
     except Exception:
         import traceback
         print(">>> EXCEPTION IN worker_process_init <<<", flush=True)

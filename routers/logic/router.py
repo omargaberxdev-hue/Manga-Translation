@@ -20,27 +20,39 @@ from fastapi import FastAPI, Header
 
 router = APIRouter(prefix="/logic", tags=["Logic"], dependencies=[Depends(get_current_user)])
 
-
 @router.post("/translate-comic")
 async def translate_comic(
-    payload: Annotated [str , Form(...)],              
+    payload: Annotated[str, Form(...)],
     files: Annotated[List[UploadFile], File()],
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
     cdn=Depends(get_cdn),
     cache=Depends(get_cache),
 ):
-    parsed_payload = TranslateComicRequest(**json.loads(payload))  
+    parsed_payload = TranslateComicRequest(**json.loads(payload))
+    cache_key = f"{parsed_payload.MangaID}:{parsed_payload.ChapterID}"
 
-    exist = await cache.getAsync(f"${parsed_payload.MangaID}%${parsed_payload.ChapterID}")
-    if exist:
-        return exist
+    cached = await cache.getAsync(cache_key)
+    if cached:
+        return json.loads(cached)
+
+    stmt = select(chapter).where(
+        and_(
+            chapter.manga_id == parsed_payload.MangaID,
+            chapter.chapter_id == parsed_payload.ChapterID,
+        )
+    )
+    result = await db.execute(stmt)
+    existing_chapter = result.scalar_one_or_none()
+
+    if existing_chapter:
+        await cache.setAsync(cache_key, json.dumps(response), ex=60 * 60 * 24)
+        return json.loads(cached)
 
     contents = await asyncio.gather(*[f.read() for f in files])
     process_number = await create_chapters(parsed_payload, contents, user, db, cdn)
 
     return {"process_number": process_number, "Message": "your Message working on"}
-
 
 @router.get("/events/")
 async def sse( request: Request, last_event_id:  Annotated[str | None, Header()] = None  , user=Depends(get_current_user), cache = Depends(get_cache)  ):

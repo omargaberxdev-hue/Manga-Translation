@@ -22,6 +22,7 @@ async def create_chapters(
     db: Session,
     cdn: CDNStrategy
 ) -> str:
+
     chapter_id = payload.ChapterID
 
     canvas_bytes, positions = build_canvas(contents)
@@ -62,7 +63,7 @@ async def create_chapters(
 async def event_stream(user_id: str, request: Request, cache: ImageCache, last_id: str = "$"):
     stream_key = f"notifications:{user_id}"
     while True:
-        if await request.is_disconnected():   # client send fin
+        if await request.is_disconnected():   
             break
         result = await cache.xread({stream_key: last_id}, block=15000, count=10)
         if not result:

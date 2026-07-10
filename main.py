@@ -14,7 +14,7 @@ from .routers.logic.router import router  as Logic_router
 
 from typing import Annotated
 from fastapi import FastAPI, UploadFile, File
-
+from app.models.database import init_engine
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -22,6 +22,7 @@ async def lifespan(app: FastAPI):
 
     
     ImageCache.connectAsync()
+    init_engine()
 
 
     yield

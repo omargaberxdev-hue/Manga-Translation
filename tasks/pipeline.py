@@ -24,6 +24,10 @@ from app.Exceptions.Internal_error import (
 
 import logging
 
+from sqlalchemy import select, and_
+from app.models.database import get_db
+from app.models.chapter import Chapter
+
 logger = logging.getLogger(__name__)
 
 
@@ -97,7 +101,7 @@ def process(self, job: dict) -> dict:
 
         ocr_result = ocr_strategy.extract(boxes)
         logger.info("ocr_complete", extra={"task_id": self.request.id, "chapter_id": chapter_id})
-
+        print (ocr_result)
         after_translation = translation_strategy.translate_blocks(ocr_result)
         logger.info("translation_complete", extra={"task_id": self.request.id, "chapter_id": chapter_id})
 
@@ -115,8 +119,48 @@ def process(self, job: dict) -> dict:
         img_bytes = img_encoded.tobytes()
         cdn_url = cdn_strategy.uploadsync(img_bytes, f"{chapter_id}_translated.png")
         print(cdn_url)
+        
+
         logger.info("Image have been rendered and uploaded",
                     extra={"task_id": self.request.id, "chapter_id": chapter_id, "cdn_url": cdn_url})
+
+        db_gen = get_db()
+        db = next(db_gen)
+        try:
+            stmt = select(Chapter).where(
+                and_(
+                    Chapter.comic_name == comic_id,
+                    Chapter.chapter_id == chapter_id,
+                )
+            )
+            existing = db.execute(stmt).scalar_one_or_none()
+
+            if existing:
+                existing.canvas_url_after = cdn_url
+            else:
+                existing = Chapter(
+                    comic_name=comic_id,
+                    chapter_id=chapter_id,
+                    canvas_url_before=job['CanvasURL'],  # fill in if you have this earlier in the pipeline
+                    canvas_url_after=cdn_url,
+                    user_id=user_id,
+                )
+                db.add(existing)
+
+            db.commit()
+            db.refresh(existing)
+
+            cache_key = f"{comic_id}:{chapter_id}"
+            cache_payload = {
+                "comic_name": existing.comic_name,
+                "chapter_id": existing.chapter_id,
+                "canvas_url_before": existing.canvas_url_before,
+                "canvas_url_after": existing.canvas_url_after,
+                "user_id": existing.user_id,
+            }
+            cache.set(cache_key, json.dumps(cache_payload), ex=86400)
+        finally:
+            db_gen.close()  # runs the generator's `finally: db.close()`
 
         request_redis = ImageCache.redis.xadd(f"notifications:{user_id}", {
             "user_id": user_id,
